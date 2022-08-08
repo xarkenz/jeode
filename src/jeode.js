@@ -21,8 +21,8 @@ class Jeode {
     get time() { return this.#time; }
 
     constructor() {
-        this.#HAS_APPEARANCE_2D = Jeode.Behavior(Jeode.attributes.APPEARANCE_2D);
-        this.#HAS_APPEARANCE_3D = Jeode.Behavior(Jeode.attributes.APPEARANCE_3D);
+        this.#HAS_APPEARANCE_2D = Jeode.behavior(Jeode.attributes.APPEARANCE_2D);
+        this.#HAS_APPEARANCE_3D = Jeode.behavior(Jeode.attributes.APPEARANCE_3D);
         this.#element = document.createElement("div");
         this.#element.className = "jeode-game";
         this.#element.style = "position: absolute; left:0; top:0; width:100%; height:100%";
@@ -41,7 +41,7 @@ class Jeode {
         const entity = this.#freedEntities.length ? this.#freedEntities.pop() : this.#nextEntity++;
         this.#entities.push(entity);
         this.#entityData[entity] = [];
-        this.#entityBehavior[entity] = Jeode.Behavior();
+        this.#entityBehavior[entity] = Jeode.behavior();
         return this.getEntity(entity);
     }
 
@@ -50,7 +50,7 @@ class Jeode {
     }
 
     *queryEntities(behavior) {
-        for (const entity of this.#entities.filter(entity => Jeode.Behavior.fits(this.#entityBehavior[entity], behavior)))
+        for (const entity of this.#entities.filter(entity => Jeode.behavior.fits(this.#entityBehavior[entity], behavior)))
             yield new Jeode.Entity(this, entity);
     }
 
@@ -62,16 +62,16 @@ class Jeode {
     }
 
     getAttribute(entity, attribute) {
-        return Jeode.Behavior.has(this.#entityBehavior[entity], attribute) ? this.#entityData[entity][attribute] : undefined;
+        return Jeode.behavior.has(this.#entityBehavior[entity], attribute) ? this.#entityData[entity][attribute] : undefined;
     }
 
     setAttribute(entity, attribute, data) {
         this.#entityData[entity][attribute] = data;
-        Jeode.Behavior.set(this.#entityBehavior[entity], attribute, true);
+        Jeode.behavior.set(this.#entityBehavior[entity], attribute, true);
     }
 
     removeAttribute(entity, attribute) {
-        Jeode.Behavior.set(this.#entityBehavior[entity], attribute, false);
+        Jeode.behavior.set(this.#entityBehavior[entity], attribute, false);
         this.#entityData[entity][attribute] = undefined;
     }
 
@@ -171,43 +171,43 @@ Jeode.Entity = class {
 };
 
 
-Jeode.Attribute = () => Jeode.Attribute.count++;
-Jeode.Attribute.count = 0;
+Jeode.attribute = () => Jeode.attribute.count++;
+Jeode.attribute.count = 0;
 
 Jeode.attributes = {
-    POSITION: Jeode.Attribute(),
-    VELOCITY: Jeode.Attribute(),
-    GRAVITY: Jeode.Attribute(),
-    MASS: Jeode.Attribute(),
-    APPEARANCE_2D: Jeode.Attribute(),
-    APPEARANCE_3D: Jeode.Attribute(),
-    MOUSE_MOVE_ACTION: Jeode.Attribute(),
-    MOUSE_PRESS_ACTION: Jeode.Attribute(),
-    MOUSE_RELEASE_ACTION: Jeode.Attribute(),
-    HEALTH: Jeode.Attribute(),
+    POSITION: Jeode.attribute(),
+    VELOCITY: Jeode.attribute(),
+    GRAVITY: Jeode.attribute(),
+    MASS: Jeode.attribute(),
+    APPEARANCE_2D: Jeode.attribute(),
+    APPEARANCE_3D: Jeode.attribute(),
+    ACTION_MOUSE_MOVE: Jeode.attribute(),
+    ACTION_MOUSE_DOWN: Jeode.attribute(),
+    ACTION_MOUSE_UP: Jeode.attribute(),
+    HEALTH: Jeode.attribute(),
 };
 
 
-Jeode.Behavior = (...attributes) => {
-    const behavior = new Int32Array((Jeode.Attribute.count >>> 5) + 1);
+Jeode.behavior = (...attributes) => {
+    const behavior = new Int32Array((Jeode.attribute.count >>> 5) + 1);
     for (let id of attributes) {
-        if (id < 0 || id >= Jeode.Attribute.count) throw RangeError(`Attribute ID ${id} out of range 0 <= x < ${Jeode.Attribute.count}.`);
+        if (id < 0 || id >= Jeode.attribute.count) throw RangeError(`Attribute ID ${id} out of range 0 <= x < ${Jeode.attribute.count}.`);
         behavior[id >>> 5] |= 1 << id;
     }
     return behavior;
 };
 
-Jeode.Behavior.set = (behavior, attribute, value) => value ? (behavior[attribute >>> 5] |= 1 << attribute) : (behavior[attribute >>> 5] &= ~(1 << attribute));
+Jeode.behavior.set = (behavior, attribute, value) => value ? (behavior[attribute >>> 5] |= 1 << attribute) : (behavior[attribute >>> 5] &= ~(1 << attribute));
 
-Jeode.Behavior.has = (behavior, attribute) => !!(behavior[attribute >>> 5] & (1 << attribute));
+Jeode.behavior.has = (behavior, attribute) => !!(behavior[attribute >>> 5] & (1 << attribute));
 
-Jeode.Behavior.fits = (behavior, desired) => {
+Jeode.behavior.fits = (behavior, desired) => {
     for (let i = 0; i < desired.length; i++)
         if ((behavior[i] & desired[i]) != desired[i]) return false;
     return true;
 };
 
-Jeode.Behaviour = Jeode.Behavior;  // Optional UK spelling
+Jeode.behaviour = Jeode.behavior;  // Alias with alternate spelling
 
 
 Jeode.Controller = class {
@@ -235,7 +235,7 @@ Jeode.controllers = {
 
         constructor(game) {
             super(game);
-            this.#HAS_MOVEMENT = Jeode.Behavior(Jeode.attributes.POSITION, Jeode.attributes.VELOCITY);
+            this.#HAS_MOVEMENT = Jeode.behavior(Jeode.attributes.POSITION, Jeode.attributes.VELOCITY);
         }
 
         start() {
