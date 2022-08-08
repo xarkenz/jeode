@@ -2,6 +2,7 @@ class Jeode {
 
     #HAS_APPEARANCE_2D;
     #HAS_APPEARANCE_3D;
+    #HAS_SCRIPT;
 
     #element;
     #running;
@@ -23,6 +24,7 @@ class Jeode {
     constructor() {
         this.#HAS_APPEARANCE_2D = Jeode.behavior(Jeode.attributes.APPEARANCE_2D);
         this.#HAS_APPEARANCE_3D = Jeode.behavior(Jeode.attributes.APPEARANCE_3D);
+        this.#HAS_SCRIPT = Jeode.behavior(Jeode.attributes.SCRIPT);
         this.#element = document.createElement("div");
         this.#element.className = "jeode-game";
         this.#element.style = "position: absolute; left:0; top:0; width:100%; height:100%";
@@ -107,13 +109,14 @@ class Jeode {
             layer.ctx = layer.element.getContext("2d");
         });
         if (this.start) this.start();
-        for (let controller of this.#controllers) if (controller.start) controller.start();
+        for (const controller of this.#controllers) if (controller.start) controller.start();
         let lastTime, dt;
         const frameCallback = (time) => {
             this.#time = time * 0.001;
             dt = lastTime === undefined ? 0 : this.#time - lastTime;
             lastTime = this.#time;
-            for (let controller of this.#controllers) if (controller.update) controller.update(dt);
+            for (const entity of this.queryEntities(this.#HAS_SCRIPT)) entity.get(Jeode.attributes.SCRIPT)(dt);
+            for (const controller of this.#controllers) if (controller.update) controller.update(dt);
             if (this.update) this.update(dt);
             this.#layers.forEach(layer => {
                 if (layer.element.width !== this.width || layer.element.height !== this.height) {
@@ -123,19 +126,20 @@ class Jeode {
                 if (!layer.is3D) layer.ctx.clearRect(0, 0, this.width, this.height);
             });
             let appearance;
-            for (let entity of this.queryEntities(this.#HAS_APPEARANCE_2D)) {
+            for (const entity of this.queryEntities(this.#HAS_APPEARANCE_2D)) {
                 appearance = entity.get(Jeode.attributes.APPEARANCE_2D);
                 if (!this.#layers[appearance.layer]) this.#addLayer(appearance.layer, false);
+                this.#layers[appearance.layer].ctx.resetTransform();
                 appearance.render(this.#layers[appearance.layer].ctx, dt);
             }
-            for (let entity of this.queryEntities(this.#HAS_APPEARANCE_3D)) {
+            for (const entity of this.queryEntities(this.#HAS_APPEARANCE_3D)) {
                 appearance = entity.get(Jeode.attributes.APPEARANCE_3D);
                 if (!this.#layers[appearance.layer]) this.#addLayer(appearance.layer, true);
                 appearance.render(this.#layers[appearance.layer].ctx, dt);
             }
             if (this.#running) window.requestAnimationFrame(frameCallback);
             else {
-                for (let controller of this.#controllers) if (controller.end) controller.end();
+                for (const controller of this.#controllers) if (controller.end) controller.end();
                 if (this.end) this.end();
                 this.#layers.forEach(layer => {
                     if (layer.element) layer.element.remove();
@@ -175,6 +179,7 @@ Jeode.attribute = () => Jeode.attribute.count++;
 Jeode.attribute.count = 0;
 
 Jeode.attributes = {
+    SCRIPT: Jeode.attribute(),
     POSITION: Jeode.attribute(),
     VELOCITY: Jeode.attribute(),
     GRAVITY: Jeode.attribute(),
