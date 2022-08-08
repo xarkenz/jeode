@@ -1,4 +1,4 @@
-class TestGame extends Jeode {
+class BouncingSmiles extends Jeode {
 
     constructor() {
         super();
@@ -95,7 +95,7 @@ class TestGame extends Jeode {
 }
 
 window.addEventListener("load", event => {
-    const testGame = new TestGame();
-    document.body.appendChild(testGame.element);
-    testGame.run();
+    const bouncingSmiles = new BouncingSmiles();
+    document.body.appendChild(bouncingSmiles.element);
+    bouncingSmiles.run();
 });
