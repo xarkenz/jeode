@@ -14,6 +14,7 @@ class Jeode {
     #entityData;
     #controllers;
     #layers;
+    #eventQueue;
 
     get element() { return this.#element; }
     get width() { return this.#element.clientWidth; }
@@ -27,7 +28,10 @@ class Jeode {
         this.#HAS_SCRIPT = Jeode.behavior(Jeode.attributes.SCRIPT);
         this.#element = document.createElement("div");
         this.#element.className = "jeode-game";
-        this.#element.style = "position: absolute; left:0; top:0; width:100%; height:100%";
+        this.#element.style = "position: absolute; left: 0; top: 0; width: 100%; height: 100%";
+        this.#element.addEventListener("mousemove", info => this.#queueEvent(Jeode.attributes.ACTION_MOUSE_MOVE, info));
+        this.#element.addEventListener("mousedown", info => this.#queueEvent(Jeode.attributes.ACTION_MOUSE_DOWN, info));
+        this.#element.addEventListener("mouseup", info => this.#queueEvent(Jeode.attributes.ACTION_MOUSE_UP, info));
         this.#running = false;
         this.#time = 0;
         this.#nextEntity = 1;
@@ -37,6 +41,7 @@ class Jeode {
         this.#entityData = [];
         this.#controllers = [];
         this.#layers = [];
+        this.#eventQueue = [];
     }
 
     createEntity() {
@@ -102,6 +107,10 @@ class Jeode {
         this.#layers[layer] = {element, ctx, is3D};
     }
 
+    #queueEvent(attribute, info) {
+        if (this.#running) this.#eventQueue.unshift({attribute, info});
+    }
+
     run() {
         this.#running = true;
         this.#layers.forEach(layer => {
@@ -109,14 +118,22 @@ class Jeode {
             layer.ctx = layer.element.getContext("2d");
         });
         if (this.start) this.start();
-        for (const controller of this.#controllers) if (controller.start) controller.start();
+        for (const controller of this.#controllers)
+            if (controller.start) controller.start();
         let lastTime, dt;
         const frameCallback = (time) => {
             this.#time = time * 0.001;
             dt = lastTime === undefined ? 0 : this.#time - lastTime;
             lastTime = this.#time;
-            for (const entity of this.queryEntities(this.#HAS_SCRIPT)) entity.get(Jeode.attributes.SCRIPT)(dt);
-            for (const controller of this.#controllers) if (controller.update) controller.update(dt);
+            while (this.#eventQueue.length) {
+                const event = this.#eventQueue.pop();
+                for (const entity of this.queryEntities(Jeode.behavior(event.attribute)))
+                    entity.get(event.attribute)(event.info, dt);
+            }
+            for (const entity of this.queryEntities(this.#HAS_SCRIPT))
+                entity.get(Jeode.attributes.SCRIPT)(dt);
+            for (const controller of this.#controllers)
+                if (controller.update) controller.update(dt);
             if (this.update) this.update(dt);
             this.#layers.forEach(layer => {
                 if (layer.element.width !== this.width || layer.element.height !== this.height) {
@@ -137,9 +154,11 @@ class Jeode {
                 if (!this.#layers[appearance.layer]) this.#addLayer(appearance.layer, true);
                 appearance.render(this.#layers[appearance.layer].ctx, dt);
             }
-            if (this.#running) window.requestAnimationFrame(frameCallback);
-            else {
-                for (const controller of this.#controllers) if (controller.end) controller.end();
+            if (this.#running) {
+                window.requestAnimationFrame(frameCallback);
+            } else {
+                for (const controller of this.#controllers)
+                    if (controller.end) controller.end();
                 if (this.end) this.end();
                 this.#layers.forEach(layer => {
                     if (layer.element) layer.element.remove();

@@ -6,7 +6,7 @@ class BouncingSmiles extends Jeode {
         this.attachController(new Jeode.controllers.Physics(this));
 
         const background = this.createEntity();
-        background.set(Jeode.attributes.APPEARANCE_2D, {layer: 0, render: (ctx, dt) => {
+        background.set(Jeode.attributes.APPEARANCE_2D, {layer: 0, render: (ctx) => {
             ctx.fillStyle = "#eee";
             ctx.fillRect(0, 0, this.width, this.height);
             ctx.strokeStyle = "#ccc";
@@ -34,7 +34,7 @@ class BouncingSmiles extends Jeode {
             ctx.stroke(below);
         }});
 
-        const renderSmiley = (smiley, color) => (ctx, dt) => {
+        const renderSmiley = (smiley, color) => (ctx) => {
             const position = smiley.get(Jeode.attributes.POSITION);
             ctx.fillStyle = color;
             ctx.strokeStyle = "black";
@@ -74,22 +74,33 @@ class BouncingSmiles extends Jeode {
                 velocity.y = Math.abs(velocity.y);
             }
         };
+        const redirectSmiley = (smiley) => (info) => {
+            const position = smiley.get(Jeode.attributes.POSITION);
+            const velocity = smiley.get(Jeode.attributes.VELOCITY);
+            const target = {x: info.clientX - position.x, y: info.clientY - position.y};
+            const ratio = Math.sqrt((velocity.x*velocity.x + velocity.y*velocity.y) / (target.x*target.x + target.y*target.y));
+            velocity.x = target.x * ratio;
+            velocity.y = target.y * ratio;
+        }
 
         const smiley1 = this.createEntity();
         smiley1.set(Jeode.attributes.POSITION, {x: 200, y: 200});
         smiley1.set(Jeode.attributes.VELOCITY, {x: 75, y: 50});
         smiley1.set(Jeode.attributes.APPEARANCE_2D, {layer: 1, render: renderSmiley(smiley1, "powderblue")});
         smiley1.set(Jeode.attributes.SCRIPT, bounceSmiley(smiley1));
+        smiley1.set(Jeode.attributes.ACTION_MOUSE_DOWN, redirectSmiley(smiley1));
         const smiley2 = this.createEntity();
         smiley2.set(Jeode.attributes.POSITION, {x: 100, y: 300});
         smiley2.set(Jeode.attributes.VELOCITY, {x: 140, y: 40});
         smiley2.set(Jeode.attributes.APPEARANCE_2D, {layer: 1, render: renderSmiley(smiley2, "lightgreen")});
         smiley2.set(Jeode.attributes.SCRIPT, bounceSmiley(smiley2));
+        smiley2.set(Jeode.attributes.ACTION_MOUSE_DOWN, redirectSmiley(smiley2));
         const smiley3 = this.createEntity();
         smiley3.set(Jeode.attributes.POSITION, {x: 300, y: 100});
         smiley3.set(Jeode.attributes.VELOCITY, {x: 60, y: 110});
         smiley3.set(Jeode.attributes.APPEARANCE_2D, {layer: 1, render: renderSmiley(smiley3, "khaki")});
         smiley3.set(Jeode.attributes.SCRIPT, bounceSmiley(smiley3));
+        smiley3.set(Jeode.attributes.ACTION_MOUSE_DOWN, redirectSmiley(smiley3));
     }
 
 }
